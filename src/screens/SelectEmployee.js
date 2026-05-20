@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { useEmployeeList } from '../hooks/useApi';
 
 export default function SelectEmployee({ navigation }) {
@@ -18,7 +18,7 @@ export default function SelectEmployee({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.logo}>CTS</Text>
+        <Image source={require('../../assets/TransLogo.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.subtitle}>Select your Employee ID</Text>
       </View>
 
@@ -68,7 +68,7 @@ export default function SelectEmployee({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f172a' },
   header: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 20 },
-  logo: { fontSize: 32, fontWeight: '900', color: '#6AB023', letterSpacing: 1 },
+  logo: { width: 120, height: 47, marginBottom: 8 },
   subtitle: { fontSize: 15, color: '#94a3b8', marginTop: 4 },
   searchContainer: { paddingHorizontal: 24, marginBottom: 16 },
   searchInput: {
