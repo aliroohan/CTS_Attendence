@@ -27,16 +27,17 @@ export function useTodayAttendance(userId) {
   return useQuery({
     queryKey: ['todayAttendance', userId],
     queryFn: () => api.get(`/attendance/history/${userId}`, { params: { limit: 10 } }).then(r => {
-      // Use local date for comparison to match what backend generates
+      // Support matching both server local time and server UTC time
       const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const utcTodayStr = now.toISOString().split('T')[0];
       
       const records = r.data.records || [];
-      const todayRecords = records.filter(rec => rec.date === todayStr);
+      const todayRecords = records.filter(rec => rec.date === localTodayStr || rec.date === utcTodayStr);
       
-      // Return both the latest record (for status) and the full list (for summary)
+      // Return both the absolute latest record (for status check) and the filtered list (for summary)
       return {
-        latest: todayRecords[0] || null,
+        latest: records[0] || null,
         all: todayRecords
       };
     }),

@@ -5,19 +5,21 @@ import { useTodayAttendance } from '../hooks/useApi';
 
 export default function HomeScreen({ route, navigation }) {
   const { employee } = route.params;
-  const { data: todayData, isLoading } = useTodayAttendance(employee._id);
+  const { data: todayData, isLoading, isError, error, refetch } = useTodayAttendance(employee._id);
   const [timer, setTimer] = useState('00:00:00');
 
-  // Handle hardware back button
+  // Handle hardware back button and focus refetch
   useFocusEffect(
     useCallback(() => {
+      refetch();
+      
       const onBackPress = () => {
         navigation.navigate('SelectEmployee');
         return true;
       };
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => subscription.remove();
-    }, [navigation])
+    }, [navigation, refetch])
   );
 
   const todayRecord = todayData?.latest;
@@ -74,6 +76,17 @@ export default function HomeScreen({ route, navigation }) {
       <View style={styles.statusCard}>
         {isLoading ? (
           <ActivityIndicator color="#6AB023" />
+        ) : isError ? (
+          <View style={styles.errorContainerInline}>
+            <Text style={styles.errorIconInline}>⚠️</Text>
+            <Text style={styles.errorTitleInline}>Status Load Failed</Text>
+            <Text style={styles.errorTextInline}>
+              {error?.response?.data?.message || error?.message || 'Unable to load today\'s status.'}
+            </Text>
+            <TouchableOpacity style={styles.retryBtnInline} onPress={() => refetch()} activeOpacity={0.8}>
+              <Text style={styles.retryBtnTextInline}>Retry</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <>
             <Text style={styles.statusLabel}>Today's Status</Text>
@@ -104,11 +117,12 @@ export default function HomeScreen({ route, navigation }) {
 
       {/* Action Button */}
       <TouchableOpacity
-        style={styles.actionBtn}
+        style={[styles.actionBtn, (isLoading || isError) && styles.actionBtnDisabled]}
         onPress={handleAction}
+        disabled={isLoading || isError}
         activeOpacity={0.8}
       >
-        <Text style={styles.actionBtnText}>
+        <Text style={[styles.actionBtnText, (isLoading || isError) && styles.actionBtnTextDisabled]}>
           {isActiveSession ? 'Check Out' : 'Check In'}
         </Text>
       </TouchableOpacity>
@@ -156,6 +170,13 @@ const styles = StyleSheet.create({
   actionBtn: { marginHorizontal: 24, marginTop: 28, backgroundColor: '#6AB023', borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
   actionBtnDisabled: { backgroundColor: '#334155' },
   actionBtnText: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  actionBtnTextDisabled: { color: '#64748b' },
   historyBtn: { marginHorizontal: 24, marginTop: 14, paddingVertical: 14, alignItems: 'center', borderRadius: 14, borderWidth: 1, borderColor: '#334155' },
   historyBtnText: { color: '#94a3b8', fontSize: 15, fontWeight: '500' },
+  errorContainerInline: { alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
+  errorIconInline: { fontSize: 32, marginBottom: 8 },
+  errorTitleInline: { fontSize: 16, fontWeight: '700', color: '#f87171', marginBottom: 4 },
+  errorTextInline: { fontSize: 13, color: '#94a3b8', textAlign: 'center', marginBottom: 16, lineHeight: 18 },
+  retryBtnInline: { backgroundColor: '#6AB023', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center' },
+  retryBtnTextInline: { color: '#0f172a', fontWeight: '700', fontSize: 14 },
 });

@@ -18,7 +18,7 @@ export default function HistoryScreen({ route, navigation }) {
     }, [navigation, employee])
   );
 
-  const { data, isLoading } = useAttendanceHistory(employee._id);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useAttendanceHistory(employee._id);
 
   const records = data?.records || [];
 
@@ -43,13 +43,26 @@ export default function HistoryScreen({ route, navigation }) {
         <Text style={styles.subtitle}>{employee.name} • {employee.employeeId}</Text>
       </View>
 
-      {isLoading ? (
+      {isLoading && !isRefetching ? (
         <ActivityIndicator size="large" color="#6AB023" style={{ marginTop: 40 }} />
+      ) : isError ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={styles.errorTitle}>Failed to Load History</Text>
+          <Text style={styles.errorText}>
+            {error?.response?.data?.message || error?.message || 'Unable to load attendance history. Please check your connection.'}
+          </Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()} activeOpacity={0.8}>
+            <Text style={styles.retryBtnText}>Retry Connection</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
           data={records}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.list}
+          refreshing={isRefetching}
+          onRefresh={refetch}
           renderItem={({ item }) => {
             const statusStyle = getStatusStyle(item.status);
             return (
@@ -116,4 +129,24 @@ const styles = StyleSheet.create({
   detailLabel: { fontSize: 13, color: '#64748b' },
   detailValue: { fontSize: 13, fontWeight: '600', color: '#f1f5f9' },
   empty: { textAlign: 'center', color: '#64748b', marginTop: 40, fontSize: 15 },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    marginTop: 40,
+  },
+  errorIcon: { fontSize: 48, marginBottom: 16 },
+  errorTitle: { fontSize: 18, fontWeight: '700', color: '#f87171', marginBottom: 8, textAlign: 'center' },
+  errorText: { fontSize: 14, color: '#94a3b8', textAlign: 'center', marginBottom: 24, lineHeight: 20 },
+  retryBtn: {
+    backgroundColor: '#6AB023',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 160,
+  },
+  retryBtnText: { color: '#0f172a', fontWeight: '700', fontSize: 15 },
 });
