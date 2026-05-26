@@ -1,26 +1,57 @@
-import React, { useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAttendanceHistory } from '../hooks/useApi';
 
+const PAGE_SIZE = 5;
+
 export default function HistoryScreen({ route, navigation }) {
   const { employee } = route.params;
+  const [page, setPage] = useState(1);
+  const [allRecords, setAllRecords] = useState([]);
 
   // Handle hardware back button
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate('Home', { employee });
+        navigation.goBack();
         return true;
       };
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => subscription.remove();
-    }, [navigation, employee])
+    }, [navigation])
   );
 
-  const { data, isLoading, isError, error, refetch, isRefetching } = useAttendanceHistory(employee._id);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useAttendanceHistory(employee._id, { page, limit: PAGE_SIZE });
 
-  const records = data?.records || [];
+  const pagination = data?.pagination;
+  const hasMore = pagination ? page < pagination.pages : false;
+
+  // Accumulate records when data changes
+  useEffect(() => {
+    if (data?.records) {
+      if (page === 1) {
+        setAllRecords(data.records);
+      } else {
+        setAllRecords(prev => {
+          const existingIds = new Set(prev.map(r => r._id));
+          const newRecords = data.records.filter(r => !existingIds.has(r._id));
+          return [...prev, ...newRecords];
+        });
+      }
+    }
+  }, [data, page]);
+
+  // Reset to page 1 on pull-to-refresh
+  const handleRefresh = () => {
+    setPage(1);
+    setAllRecords([]);
+    refetch();
+  };
+
+  const handleShowMore = () => {
+    setPage(prev => prev + 1);
+  };
 
   const getStatusStyle = (status) => {
     switch (status) {
@@ -33,19 +64,43 @@ export default function HistoryScreen({ route, navigation }) {
 
   const formatTime = (d) => d ? new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '—';
 
+  const renderFooter = () => {
+    if (isLoading && page > 1) {
+      return <ActivityIndicator color="#6AB023" style={{ marginVertical: 20 }} />;
+    }
+    if (hasMore) {
+      return (
+        <TouchableOpacity style={styles.showMoreBtn} onPress={handleShowMore} activeOpacity={0.8}>
+          <Text style={styles.showMoreText}>Show More</Text>
+          {pagination && (
+            <Text style={styles.showMoreCount}>
+              Showing {allRecords.length} of {pagination.total}
+            </Text>
+          )}
+        </TouchableOpacity>
+      );
+    }
+    if (allRecords.length > 0) {
+      return (
+        <Text style={styles.endText}>— All records loaded —</Text>
+      );
+    }
+    return null;
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Home', { employee })}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backBtn}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Attendance History</Text>
         <Text style={styles.subtitle}>{employee.name} • {employee.employeeId}</Text>
       </View>
 
-      {isLoading && !isRefetching ? (
+      {isLoading && page === 1 && !isRefetching ? (
         <ActivityIndicator size="large" color="#6AB023" style={{ marginTop: 40 }} />
-      ) : isError ? (
+      ) : isError && allRecords.length === 0 ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorTitle}>Failed to Load History</Text>
@@ -58,11 +113,12 @@ export default function HistoryScreen({ route, navigation }) {
         </View>
       ) : (
         <FlatList
-          data={records}
+          data={allRecords}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.list}
-          refreshing={isRefetching}
-          onRefresh={refetch}
+          refreshing={isRefetching && page === 1}
+          onRefresh={handleRefresh}
+          ListFooterComponent={renderFooter}
           renderItem={({ item }) => {
             const statusStyle = getStatusStyle(item.status);
             return (
@@ -129,6 +185,19 @@ const styles = StyleSheet.create({
   detailLabel: { fontSize: 13, color: '#64748b' },
   detailValue: { fontSize: 13, fontWeight: '600', color: '#f1f5f9' },
   empty: { textAlign: 'center', color: '#64748b', marginTop: 40, fontSize: 15 },
+  showMoreBtn: {
+    backgroundColor: '#1e293b',
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#6AB023',
+  },
+  showMoreText: { color: '#6AB023', fontSize: 16, fontWeight: '700' },
+  showMoreCount: { color: '#64748b', fontSize: 12, marginTop: 4 },
+  endText: { textAlign: 'center', color: '#334155', fontSize: 13, marginTop: 12, marginBottom: 20 },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',

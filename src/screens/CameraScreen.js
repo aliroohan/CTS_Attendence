@@ -13,7 +13,7 @@ export default function CameraScreen({ route, navigation }) {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate('Home', { employee });
+        navigation.goBack();
         return true;
       };
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
@@ -90,7 +90,7 @@ export default function CameraScreen({ route, navigation }) {
         checkIn.mutate(formData, {
           onSuccess: () => {
             Alert.alert('Success', 'Checked in successfully!', [
-              { text: 'OK', onPress: () => navigation.navigate('Home', { employee }) },
+              { text: 'OK', onPress: () => navigation.pop(2) },
             ]);
           },
           onError: (err) => {
@@ -102,7 +102,7 @@ export default function CameraScreen({ route, navigation }) {
         checkOut.mutate(formData, {
           onSuccess: () => {
             Alert.alert('Success', 'Checked out successfully!', [
-              { text: 'OK', onPress: () => navigation.navigate('Home', { employee }) },
+              { text: 'OK', onPress: () => navigation.pop(1) },
             ]);
           },
           onError: (err) => {
@@ -120,7 +120,7 @@ export default function CameraScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Home', { employee })}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backBtn}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>

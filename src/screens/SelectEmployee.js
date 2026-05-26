@@ -1,10 +1,23 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image, BackHandler } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useEmployeeList } from '../hooks/useApi';
 
 export default function SelectEmployee({ navigation }) {
   const [search, setSearch] = useState('');
   const { data: employees = [], isLoading, isError, error, refetch, isRefetching } = useEmployeeList();
+
+  // Exit app when hardware back button is pressed on this root screen
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        BackHandler.exitApp();
+        return true;
+      };
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
 
   const filtered = employees.filter(e =>
     e.name.toLowerCase().includes(search.toLowerCase()) ||

@@ -72,11 +72,11 @@ export function useCheckOut() {
   });
 }
 
-// Attendance history
-export function useAttendanceHistory(userId) {
+// Attendance history (paginated)
+export function useAttendanceHistory(userId, { page = 1, limit = 5 } = {}) {
   return useQuery({
-    queryKey: ['attendanceHistory', userId],
-    queryFn: () => api.get(`/attendance/history/${userId}`).then(r => r.data),
+    queryKey: ['attendanceHistory', userId, page, limit],
+    queryFn: () => api.get(`/attendance/history/${userId}`, { params: { page, limit } }).then(r => r.data),
     enabled: !!userId,
   });
 }

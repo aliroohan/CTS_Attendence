@@ -14,7 +14,7 @@ export default function HomeScreen({ route, navigation }) {
       refetch();
       
       const onBackPress = () => {
-        navigation.navigate('SelectEmployee');
+        navigation.goBack();
         return true;
       };
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
@@ -55,7 +55,7 @@ export default function HomeScreen({ route, navigation }) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('SelectEmployee')}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backBtn}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.date}>
